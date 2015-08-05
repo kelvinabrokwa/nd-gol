@@ -1,6 +1,6 @@
 /* global THREE */
 
-var camera, scene, pointLight, renderer;
+var camera, scene, pointLight, renderer, controls;
 var cells = {}, nextGen = {};
 
 init();
@@ -29,11 +29,14 @@ function init() {
 
   scene.add(camera);
 
-  camera.position.set(100, 100, 450);
+  camera.position.set(60, 40, 70);
 
   renderer.setSize(WIDTH, HEIGHT);
 
   document.body.appendChild(renderer.domElement);
+
+  controls = new THREE.OrbitControls(camera);
+  controls.addEventListener('change', render);
 
   pointLight = new THREE.PointLight(0xFFFFFF);
   pointLight.position.set(0, 0, 1000);
@@ -56,6 +59,12 @@ function init() {
       }
     }
   }
+  animate();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
 }
 
 function render() {
@@ -99,11 +108,11 @@ function Cell(position, id) {
   this.id = id;
 
   this.geometry = new THREE.Mesh(
-    new THREE.BoxGeometry(10, 10, 10),
+    new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshNormalMaterial()
   );
   var p = this.position;
-  this.geometry.position.set(p.x * 25, p.y * 25, p.z * 25);
+  this.geometry.position.set(p.x * 3, p.y * 3, p.z * 3);
 
   this.neighbors = [];
   for (var i = p.x - 1; i <= p.x + 1; i++) {
@@ -125,5 +134,6 @@ Cell.prototype.next = function() {
       liveNeighbors++;
     }
   }
-  return liveNeighbors > 10 && liveNeighbors < 20;
+  return liveNeighbors > 9 && liveNeighbors < 20;
 };
+
