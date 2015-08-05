@@ -1,6 +1,6 @@
 /* global THREE */
 
-var camera, scene, renderer;
+var camera, scene, pointLight, renderer;
 var cells = {}, nextGen = {};
 
 init();
@@ -30,14 +30,12 @@ function init() {
   scene.add(camera);
 
   camera.position.set(70, 70, 400);
-  //camera.rotation.x = 10 * Math.PI / 180;
-  //camera.rotation.y = 10 * Math.PI / 180;
 
   renderer.setSize(WIDTH, HEIGHT);
 
   document.body.appendChild(renderer.domElement);
 
-  var pointLight = new THREE.PointLight(0xFFFFFF);
+  pointLight = new THREE.PointLight(0xFFFFFF);
   pointLight.position.set(0, 0, 1000);
   scene.add(pointLight);
 
@@ -47,8 +45,14 @@ function init() {
     for (var j = 0; j < 7; j++) {
       for (var k = 0; k < 7; k++) {
         id = [i, j, k].map(String).join('');
-        cells[id] = new Cell([i, j, k], id);
-        scene.add(cells[id].geometry);
+        cells[id] = {
+          cell: new Cell([i, j, k], id),
+          isAlive: false
+        };
+        if (Math.random() > 0.4) {
+          cells[id].isAlive = true;
+          scene.add(cells[id].cell.geometry);
+        }
       }
     }
   }
@@ -56,28 +60,31 @@ function init() {
 
 function render() {
   renderer.render(scene, camera);
-
-  setInterval(function() {
-    cells = nextGen;
-    nextGen = {};
-    generate();
-  }, 1000);
 }
 
-function generate() {
-  scene = null;
+setInterval(function() {
+  setNextScene();
+  render();
+}, 1000);
+
+function setNextScene() {
+  scene = new THREE.Scene();
+  scene.add(camera);
+  scene.add(pointLight);
   var id;
   for (var i = 0; i < 7; i++) {
     for (var j = 0; j < 7; j++) {
       for (var k = 0; k < 7; k++) {
         id = [i, j, k].map(String).join('');
-        if (cells[id]) {
-          scene.add(cells[id].geometry);
+        cells[id].cell.next();
+        if (nextGen[id].isAlive) {
+          scene.add(cells[id].cell.geometry);
         }
       }
     }
   }
-
+  cells = JSON.parse(JSON.stringify(nextGen));
+  nextGen = {};
 }
 
 function Cell(position, id) {
@@ -87,6 +94,7 @@ function Cell(position, id) {
     z: position[2]
   };
   this.id = id;
+
   this.geometry = new THREE.Mesh(
     new THREE.BoxGeometry(10, 10, 10),
     new THREE.MeshNormalMaterial()
@@ -104,12 +112,15 @@ function Cell(position, id) {
   }
 }
 
-Cell.prototype.alive = function() {
+Cell.prototype.next = function() {
   var liveNeighbors = 0;
   for (var i = 0, ii = this.neighbors.length; i < ii; i++) {
-    if (cells[this.neighbors[i]]) {
+    if (typeof cells[this.neighbors[i]] !== 'undefined' && cells[this.neighbors[i]].isAlive) {
       liveNeighbors++;
     }
   }
-  nextGen[this.id] = liveNeighbors > 10 && liveNeighbors < 20;
+  nextGen[this.id] = {
+    cell: this,
+    isAlive: liveNeighbors > 10 && liveNeighbors < 20
+  };
 };
