@@ -1,6 +1,7 @@
 /* global THREE */
 
 var camera, scene, renderer;
+var cells = {}, nextGen = {};
 
 init();
 render();
@@ -41,12 +42,13 @@ function init() {
   scene.add(pointLight);
 
   // add cells
-  var cell;
+  var id;
   for (var i = 0; i < 7; i++) {
     for (var j = 0; j < 7; j++) {
       for (var k = 0; k < 7; k++) {
-        cell = new Cell([i, j, k]);
-        scene.add(cell.geometry);
+        id = [i, j, k].map(String).join('');
+        cells[id] = new Cell([i, j, k], id);
+        scene.add(cells[id].geometry);
       }
     }
   }
@@ -54,18 +56,60 @@ function init() {
 
 function render() {
   renderer.render(scene, camera);
+
+  setInterval(function() {
+    cells = nextGen;
+    nextGen = {};
+    generate();
+  }, 1000);
 }
 
-function Cell(position) {
+function generate() {
+  scene = null;
+  var id;
+  for (var i = 0; i < 7; i++) {
+    for (var j = 0; j < 7; j++) {
+      for (var k = 0; k < 7; k++) {
+        id = [i, j, k].map(String).join('');
+        if (cells[id]) {
+          scene.add(cells[id].geometry);
+        }
+      }
+    }
+  }
+
+}
+
+function Cell(position, id) {
   this.position = {
     x: position[0],
     y: position[1],
     z: position[2]
   };
+  this.id = id;
   this.geometry = new THREE.Mesh(
     new THREE.BoxGeometry(10, 10, 10),
     new THREE.MeshNormalMaterial()
   );
-  var pos = this.position;
-  this.geometry.position.set(pos.x * 25, pos.y * 25, pos.z * 25);
+  var p = this.position;
+  this.geometry.position.set(p.x * 25, p.y * 25, p.z * 25);
+
+  this.neighbors = [];
+  for (var i = p.x - 1; i <= p.x + 1; i++) {
+    for (var j = p.y - 1; j <= p.y + 1; j++) {
+      for (var k = p.z - 1; k <= p.z + 1; k++) {
+        this.neighbors.push([i, j, k].map(String).join(''));
+      }
+    }
+  }
 }
+
+Cell.prototype.alive = function() {
+  var liveNeighbors = 0;
+  for (var i = 0, ii = this.neighbors.length; i < ii; i++) {
+    if (cells[this.neighbors[i]]) {
+      liveNeighbors++;
+    }
+  }
+  nextGen[this.id] = liveNeighbors > 10 && liveNeighbors < 20;
+};
