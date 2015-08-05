@@ -29,7 +29,7 @@ function init() {
 
   scene.add(camera);
 
-  camera.position.set(70, 70, 400);
+  camera.position.set(100, 100, 450);
 
   renderer.setSize(WIDTH, HEIGHT);
 
@@ -41,9 +41,9 @@ function init() {
 
   // add cells
   var id;
-  for (var i = 0; i < 7; i++) {
-    for (var j = 0; j < 7; j++) {
-      for (var k = 0; k < 7; k++) {
+  for (var i = 0; i < 9; i++) {
+    for (var j = 0; j < 9; j++) {
+      for (var k = 0; k < 9; k++) {
         id = [i, j, k].map(String).join('');
         cells[id] = {
           cell: new Cell([i, j, k], id),
@@ -72,18 +72,21 @@ function setNextScene() {
   scene.add(camera);
   scene.add(pointLight);
   var id;
-  for (var i = 0; i < 7; i++) {
-    for (var j = 0; j < 7; j++) {
-      for (var k = 0; k < 7; k++) {
+  for (var i = 0; i < 9; i++) {
+    for (var j = 0; j < 9; j++) {
+      for (var k = 0; k < 9; k++) {
         id = [i, j, k].map(String).join('');
-        cells[id].cell.next();
+        nextGen[id] = {
+          isAlive: cells[id].cell.next(),
+          cell: cells[id].cell
+        };
         if (nextGen[id].isAlive) {
           scene.add(cells[id].cell.geometry);
         }
       }
     }
   }
-  cells = JSON.parse(JSON.stringify(nextGen));
+  cells = nextGen;
   nextGen = {};
 }
 
@@ -106,7 +109,10 @@ function Cell(position, id) {
   for (var i = p.x - 1; i <= p.x + 1; i++) {
     for (var j = p.y - 1; j <= p.y + 1; j++) {
       for (var k = p.z - 1; k <= p.z + 1; k++) {
-        this.neighbors.push([i, j, k].map(String).join(''));
+        id = [i, j, k].map(String).join('');
+        if (id !== this.id) {
+          this.neighbors.push(id);
+        }
       }
     }
   }
@@ -119,8 +125,5 @@ Cell.prototype.next = function() {
       liveNeighbors++;
     }
   }
-  nextGen[this.id] = {
-    cell: this,
-    isAlive: liveNeighbors > 10 && liveNeighbors < 20
-  };
+  return liveNeighbors > 10 && liveNeighbors < 20;
 };
